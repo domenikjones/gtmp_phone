@@ -33,19 +33,19 @@ namespace Smartphone
         public static void CreatePlayerContactsList(string name)
         {
             // initialize player contact data
-            var playerContactsData = new PlayerContactsData()
+            var PlayerContactData = new PlayerContactData()
             {
                 socialClubName = name,
                 contacts = new List<ContactData>(),
             };
-            WritePlayerContactsData(name, playerContactsData);
+            WritePlayerContactData(name, PlayerContactData);
             return;
         }
 
-        public static PlayerContactsData GetPlayerContactsData(string name)
+        public static PlayerContactData GetPlayerContactData(string name)
         {
-            var playerContactsData = ReadPlayerContactsData(name);
-            return playerContactsData;
+            var PlayerContactData = ReadPlayerContactData(name);
+            return PlayerContactData;
         }
 
         public static string[] AddContactToPlayerContactsList(string name, params string[] args)
@@ -53,10 +53,10 @@ namespace Smartphone
             var addName = args[0];
             var addNumber = args[1];
 
-            var playerContactsData = GetPlayerContactsData(name);
+            var PlayerContactData = GetPlayerContactData(name);
 
             // check for duplicates entry (name)
-            var nameDuplicate = playerContactsData.contacts.Where(c => c.name == addName);
+            var nameDuplicate = PlayerContactData.contacts.Where(c => c.name == addName);
             if (nameDuplicate.Any())
             {
                 string[] resultErrorName = new string[] {"error_name", addName};
@@ -64,7 +64,7 @@ namespace Smartphone
             }
 
             // check for duplicates entry (number)
-            var numberDuplicate = playerContactsData.contacts.Where(c => c.number == addNumber);
+            var numberDuplicate = PlayerContactData.contacts.Where(c => c.number == addNumber);
             if (numberDuplicate.Any())
             {
                 string[] resultErrorNumber = new string[] {"error_number", addNumber};
@@ -76,13 +76,13 @@ namespace Smartphone
                 name = addName,
                 number = addNumber,
             };
-            playerContactsData.contacts.Add(contactData);
+            PlayerContactData.contacts.Add(contactData);
 
             // reorder contact data
-            playerContactsData.contacts.OrderBy(c=>c.name);
+            PlayerContactData.contacts.OrderBy(c=>c.name);
 
             // save contact data to database
-            WritePlayerContactsData(name, playerContactsData);
+            WritePlayerContactData(name, PlayerContactData);
 
             string[] resultSucces = new string[] {"success", addName, addNumber};
             return resultSucces;
@@ -90,33 +90,33 @@ namespace Smartphone
 
         public static string[] RemoveContactFromPlayerContactsList(string name, string removeName)
         {
-            PlayerContactsData playerContactsData = GetPlayerContactsData(name);
+            PlayerContactData PlayerContactData = GetPlayerContactData(name);
 
             // validate the name of the contact exists
-            var contacts = playerContactsData.contacts.Where(c=>c.name==removeName);
+            var contacts = PlayerContactData.contacts.Where(c=>c.name==removeName);
             if (!contacts.Any()) {
                 string[] resultError = new string[] {"error", removeName};
                 return resultError;
             }
 
             // remove contact from players contacts list and save
-            playerContactsData.contacts.Remove(contacts.FirstOrDefault());
-            WritePlayerContactsData(name, playerContactsData);
+            PlayerContactData.contacts.Remove(contacts.FirstOrDefault());
+            WritePlayerContactData(name, PlayerContactData);
 
             string[] result = new string[] {"success", removeName}; 
             return result;
         }
 
-        public static PlayerContactsData ReadPlayerContactsData(string name)
+        public static PlayerContactData ReadPlayerContactData(string name)
         {
             // read from simple file in path and load as json
             var path = Path.Combine(CONTACTS_FOLDER, name);
             var txt = File.ReadAllText(path);
-            PlayerContactsData playerContacts = API.shared.fromJson(txt).ToObject<PlayerContactsData>();
+            PlayerContactData playerContacts = API.shared.fromJson(txt).ToObject<PlayerContactData>();
             return playerContacts;
         }
 
-        public static void WritePlayerContactsData(string name, PlayerContactsData data)
+        public static void WritePlayerContactData(string name, PlayerContactData data)
         {
             // write json to simple text file
             var path = Path.Combine(CONTACTS_FOLDER, name);
@@ -127,7 +127,7 @@ namespace Smartphone
 
     }
 
-    public class PlayerContactsData
+    public class PlayerContactData
     {
         public string socialClubName { get; set; }
         public List<ContactData> contacts { get; set; }

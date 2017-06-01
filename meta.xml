@@ -4,8 +4,7 @@
     <assembly ref="System.Xml.dll"/>
 
     <script src="Database.cs" type="server" lang="csharp" />
-    <script src="PhoneManager.cs" type="server" lang="csharp" />
+    <script src="SmartphoneManager.cs" type="server" lang="csharp" />
 
-    <script src="menu/phone.js" type="client" />
-    <script src="menu/contacts.js" type="client" />
+    <script src="smartphone.js" type="client" />
 </meta>
