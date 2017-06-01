@@ -1,10 +1,12 @@
-using System.Collections.Generic;
+using System;
+using System.Linq;
 
 using GrandTheftMultiplayer.Server.API;
 using GrandTheftMultiplayer.Server.Elements;
 using GrandTheftMultiplayer.Server.Managers;
 
-namespace RPGResource
+
+namespace Smartphone
 {
     public class PhoneManager : Script
     {
@@ -40,12 +42,33 @@ namespace RPGResource
 	        // add contact request
 	        else if (eventName == "ADD_CONTACT_REQUEST")
 	        {
-	        	Database.AddContactToPlayerContactsList(player.socialClubName, arguments[0].ToString(), arguments[1].ToString());
-				API.triggerClientEvent(player, "ADD_CONTACT_RESPONSE", arguments[0].ToString(), arguments[1].ToString());
+	        	var result = Database.AddContactToPlayerContactsList(player.socialClubName, arguments[0].ToString(), arguments[1].ToString());
+        		API.shared.consoleOutput("AddContactToPlayerContactsList.Result: " + result[0] + " " + result[1]);
+
+	        	// error while trying to save new contact
+        		if (result[0] == "error_name" || result[0] == "error_number")
+        		{
+        			API.triggerClientEvent(player, "ADD_CONTACT_RESPONSE_ERROR", result[0], result[1]);
+        			return;
+    			}
+
+    			API.shared.consoleOutput("AddContactToPlayerContactsList: " + result[0] + " " + result[1] + " " + result[2]);
+				API.triggerClientEvent(player, "ADD_CONTACT_RESPONSE", result[1], result[2]);
+				return;
 	        }
 
 	        // recieve edit contact request
 	        // recieve delete contact request
+	        else if (eventName == "DELETE_CONTACT_REQUEST")
+	        {
+	        	var name = arguments[0].ToString();
+
+        		var result = Database.RemoveContactFromPlayerContactsList(player.socialClubName, name);
+        		if (result[0] != "success")
+        			API.triggerClientEvent(player, "DELETE_CONTACT_RESPONSE_ERROR", result[0], name);
+
+				API.triggerClientEvent(player, "DELETE_CONTACT_RESPONSE", result[0], name);
+	        }
         }
 
         //

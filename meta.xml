@@ -8,5 +8,4 @@
 
     <script src="menu/phone.js" type="client" />
     <script src="menu/contacts.js" type="client" />
-    <script src="menu/public.js" type="client" />
 </meta>
