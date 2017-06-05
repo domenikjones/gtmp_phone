@@ -44,7 +44,7 @@ namespace Smartphone
 
         public static PlayerContactData GetPlayerContactData(string name)
         {
-            var PlayerContactData = ReadPlayerContactData(name);
+            PlayerContactData PlayerContactData = ReadPlayerContactData(name);
             return PlayerContactData;
         }
 
@@ -131,6 +131,7 @@ namespace Smartphone
     {
         public string socialClubName { get; set; }
         public List<ContactData> contacts { get; set; }
+        public int credits { get; set; }
     }
 
     public class ContactData

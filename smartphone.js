@@ -76,6 +76,10 @@ API.onResourceStart.connect(function (sender, e) {
 API.onServerEventTrigger.connect(function(eventName, args) {
 	
 	switch(eventName) {
+
+		case 'CONTACT_INFO_RESPONSE':
+			creditsMenuItem.SetRightLabel(args[0].toString());
+			break;
 		
 		case 'CONTACT_LIST_RESPONSE':
 			// rebuild the contact list with the recieved json in text format
@@ -100,6 +104,7 @@ API.onServerEventTrigger.connect(function(eventName, args) {
 
 		case 'ADD_CONTACT_RESPONSE':
 			// contact has been created, rebuild contact list
+			// will also be triggered after editting a contact
 			smartphone.createClientContactListMenu();
 			API.sendNotification('Kontakt hinzugefügt: ' + args[0] + " - " + args[1]);
 			break;
@@ -112,6 +117,10 @@ API.onServerEventTrigger.connect(function(eventName, args) {
 		case 'DELETE_CONTACT_RESPONSE_ERROR':
 			// an error occoured while deleting the contact from the database
 			API.sendNotification('Kontakt konnte nicht gelöscht werden: ' + args[1]);
+			break;
+
+		case 'CONTACT_CALL_RESPONSE':
+			API.sendNotification('CONTACT_CALL_RESPONSE: ' + args[1]);
 			break;
 
 		case 'CONTACT_CALL_REQUEST_ERROR':
@@ -152,13 +161,17 @@ class Smartphone {
 
 	// initialize smartphone
 	constructor() {
-		API.sendChatMessage("Smartphone gestartet");
+		//API.sendChatMessage("Smartphone gestartet");
 		this.credits = "0";	
 	}
 
 	setSmartPhone() {
 		// set credits menuItem rightLabel
-		creditsMenuItem.SetRightLabel(this.credits);
+		//API.sendChatMessage("Smartphone gestartet");
+		API.triggerServerEvent("CONTACT_INFO_REQUEST");
+	}
+
+	requestSmartPhone() {		
 	}
 
 	setContactList() {
@@ -169,12 +182,12 @@ class Smartphone {
 	}
 
 	getServerContactList() {
-		API.sendChatMessage("Smartphone:getServerContactList");
+		//API.sendChatMessage("Smartphone:getServerContactList");
 		API.triggerServerEvent("CONTACT_LIST_REQUEST");
 	}
 
 	setServerContactList(contact_list) {
-		API.sendChatMessage("Smartphone:setServerContactList");
+		//API.sendChatMessage("Smartphone:setServerContactList");
 		this.createClientContactListMenu(contact_list);
 	}
 
@@ -207,7 +220,7 @@ class Smartphone {
 		contactListMenu.RefreshIndex();
 	}
 
-	addContactToClient() {
+	addContactToClient(skip_save=false) {
 		// prompt for name
 		//API.sendNotification('Name des Kontaktes eingeben.');
 		addName = API.getUserInput("", 20);
@@ -228,13 +241,17 @@ class Smartphone {
 			return null;
 		}
 
+		if (skip_save) {
+			let result = new Array(addName, addNumber)
+			return result;
+		}
+
 		// send contact data to onServerEventTrigger
 		API.triggerServerEvent("ADD_CONTACT_REQUEST", addName, addNumber);
 		return;
 	}
 
-	deleteContactFromClient(name)
-	{
+	deleteContactFromClient(name) {
 		// confirm the contact should be deleted by promting for "ja" or "Ja"
 		API.sendNotification('Ja um den Kontakt zu löschen.');
 		let confirm = API.getUserInput("", 4);
@@ -244,6 +261,22 @@ class Smartphone {
 			contactMenu.Visible = false;
 			API.triggerServerEvent("DELETE_CONTACT_REQUEST", name);
 		}
+
+		API.sendNotification("Ungültige Eingabe um einen Kontakt zu löschen");
+		return;
+	}
+
+	editContact(number) {
+		let newContact = this.addContactToClient(true);
+
+		//  contact information could not be entered
+		if (newContact == null) {
+			API.sendNotification("Kontakt konnte nicht bearbeitet werden. Error Code Smarphone 1001.");
+			return;
+		}
+
+		API.triggerServerEvent("EDIT_CONTACT_REQUEST", newContact[0], newContact[1], number);
+		contactMenu.Visible = false;
 	}
 
 	createClientContactMenu(name, number) {
@@ -263,12 +296,19 @@ class Smartphone {
 		contactMenu.AddItem(contactMenuNumberItem);
 
 		// contact menu item: call
-		let contactMenuCallItem = API.createMenuItem("Anrufen", "");
+		let contactMenuCallItem = API.createMenuItem("~g~Anrufen", "");
 		contactMenuCallItem.Activated.connect(function(menu, item) {
 			smartphone.callContact(name, number);
 			contactMenu.Visible = false;
 		});
 		contactMenu.AddItem(contactMenuCallItem);
+
+		// contact menu item: edit
+		let contactMenuEditItem = API.createMenuItem("~o~Bearbeiten", "");
+		contactMenuEditItem.Activated.connect(function(menu, item) {
+			smartphone.editContact(number);
+		});
+		contactMenu.AddItem(contactMenuEditItem);
 
 		// contact menu item: delete contact
 		let contactMenuDeleteItem = API.createMenuItem("~r~Löschen", "");
