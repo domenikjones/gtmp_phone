@@ -24,7 +24,10 @@ namespace Smartphone
             return;
     	}
 
-    	public static bool DoesPlayerContactsExists(string name)
+        /*
+         Players data
+         */
+        public static bool DoesPlayerContactsExists(string name)
         {
             var path = Path.Combine(CONTACTS_FOLDER, name);
             return File.Exists(path);
@@ -125,18 +128,114 @@ namespace Smartphone
             return;
         }
 
+        /*
+         Server PlayerList 
+         */
+
+        public static PlayerContactData GetPlayerContactDataByNumber(string number)
+        {
+            PlayerList playerList = ReadPlayerList();
+            var target = playerList.players.Where(p => p.number == number);
+            if (target.Any())
+            {
+                return target.FirstOrDefault();
+            }
+            return null;
+        }
+
+        public static bool DoesPlayersExists()
+        {
+            // does the player file exist
+            var path = Path.Combine(CONTACTS_FOLDER, "players");
+            return File.Exists(path);
+        }
+
+        public static bool DoesPlayerExist(Client player, string name)
+        {
+            PlayerList playerList = ReadPlayerList();
+            if (!playerList.players.Where(p => p.socialClubName == player.socialClubName).Any())
+            {
+                // create new phone number
+                bool numberAvailable = false;
+                int number = 0;
+                Random r = new Random();
+
+                while (!numberAvailable)
+                {
+                    number = r.Next(12000, 19999);
+                    number += 42000000; // add number prefix
+                    if (!playerList.players.Where(p => p.number == number.ToString()).Any())
+                    {
+                        numberAvailable = true;
+                    }
+                }
+
+                PlayerContactData newPlayer = new PlayerContactData {
+                    name = name,
+                    socialClubName = player.socialClubName,
+                    number = number.ToString(),
+                    credits = 0,
+                    contacts = new List<ContactData>(),
+                };
+
+                playerList.players.Add(newPlayer);
+                WritePlayers(playerList);
+
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public static void CreatePlayers()
+        {
+            // initialize player contact data
+            PlayerList players = new PlayerList() {
+                players = new List<PlayerContactData>(),
+            };
+            WritePlayers(players);
+            return;
+        }
+
+        public static PlayerList ReadPlayerList()
+        {
+            // read from simple file in path and load as json
+            var path = Path.Combine(CONTACTS_FOLDER, "players");
+            var txt = File.ReadAllText(path);
+            PlayerList playerList = API.shared.fromJson(txt).ToObject<PlayerList>();
+            return playerList;
+        }
+
+        public static void WritePlayers(PlayerList data)
+        {
+            // write json to simple text file
+            var path = Path.Combine(CONTACTS_FOLDER, "players");
+            var ser = API.shared.toJson(data);
+            File.WriteAllText(path, ser);
+            return;
+        }
     }
 
     public class PlayerContactData
     {
+        public string name { get; set; }
         public string socialClubName { get; set; }
-        public List<ContactData> contacts { get; set; }
+        public string number { get; set; }
         public int credits { get; set; }
+        public List<ContactData> contacts { get; set; }
+        //public DateTime lastAction { get; set; }
     }
 
     public class ContactData
     {
         public string name { get; set; }
         public string number { get; set; }
+    }
+
+    public class PlayerList
+    {
+        public List<PlayerContactData> players { get; set; }
     }
 }

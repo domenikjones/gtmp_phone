@@ -1,5 +1,8 @@
+// prepare menu
 var menuPool = API.getMenuPool();
 var phoneMenu = API.createMenu("SMARTPHONE", "", 0, 0, 6);
+
+// prepare menu pool
 menuPool.Add(phoneMenu);
 
 // smartphone class instance
@@ -18,6 +21,9 @@ let contactListMenuItem = null;
 let addName = null;
 let addNumber = null;
 
+//
+// Resource start event
+//
 API.onResourceStart.connect(function (sender, e) {
 	// initialize phone
 	smartphone = new Smartphone();
@@ -71,7 +77,32 @@ API.onResourceStart.connect(function (sender, e) {
 });
 
 //
-// events triggered by server
+// Keys event
+//
+API.onKeyDown.connect(function(sender, keyEventArgs) {
+	if (keyEventArgs.KeyCode == Keys.F3) {
+		if (!phoneMenu.Visible) {
+			smartphone.setSmartPhone();
+		}
+
+		phoneMenu.Visible = !phoneMenu.Visible;
+	}
+	
+	if (keyEventArgs.KeyCode == Keys.ESC || keyEventArgs.KeyCode == Keys.F3) {
+		contactListMenu.Visible = false;
+		contactMenu.Visible = false;
+	}
+});
+
+//
+// Update event
+//
+API.onUpdate.connect(function(sender, events) {
+	menuPool.ProcessMenus();
+});
+
+//
+// Events triggered
 //
 API.onServerEventTrigger.connect(function(eventName, args) {
 	
@@ -130,44 +161,33 @@ API.onServerEventTrigger.connect(function(eventName, args) {
 				return;
 			}
 			// request number unavailable
-			if (args[0] == 'number_unavailable') {
+			else if (args[0] == 'number_unavailable') {
 				API.sendNotification('Nummer nicht verfügbar: ' + args[1]);
+				return;
+			}
+			// not implenented yes
+			else if (args[0] == 'not_implemented') {
+				API.sendNotification('Noch nicht implementiert.');
 				return;
 			}
 			
 	}
 });
 
-API.onKeyDown.connect(function(sender, keyEventArgs) {
-	if (keyEventArgs.KeyCode == Keys.F3) {
-		if (!phoneMenu.Visible) {
-			smartphone.setSmartPhone();
-		}
-
-		phoneMenu.Visible = !phoneMenu.Visible;
-	}
-	
-	if (keyEventArgs.KeyCode == Keys.ESC || keyEventArgs.KeyCode == Keys.F3) {
-		contactListMenu.Visible = false;
-		contactMenu.Visible = false;
-	}
-});
-
-API.onUpdate.connect(function(sender, events) {
-	menuPool.ProcessMenus();
-});
-
+//
+// Smartphone
+//
 class Smartphone {
 
 	// initialize smartphone
 	constructor() {
-		//API.sendChatMessage("Smartphone gestartet");
+		API.sendChatMessage("Smartphone gestartet");
 		this.credits = "0";	
+		this.isCalling = false;
 	}
 
 	setSmartPhone() {
 		// set credits menuItem rightLabel
-		//API.sendChatMessage("Smartphone gestartet");
 		API.triggerServerEvent("CONTACT_INFO_REQUEST");
 	}
 
@@ -225,24 +245,25 @@ class Smartphone {
 		//API.sendNotification('Name des Kontaktes eingeben.');
 		addName = API.getUserInput("", 20);
 
-		// verify number prompt is a number
+		// verify input is a number
 		if (addName == "") {
 			API.sendNotification('~r~Keine gültiger Name.');
 			return null;
 		}
 
-		// verify name prompt is valid
+		// prompt for number
 		//API.sendNotification('Nummer des Kontaktes eingeben.');
-		addNumber = API.getUserInput("", 6);
+		addNumber = API.getUserInput("", 8);
 
-		// verify number prompt is a number
+		// verify input is a number
 		if (isNaN(addNumber) || addNumber == "") {
 			API.sendNotification('~r~Keine gültige Nummer.');
 			return null;
 		}
 
+		// skip triggering event, because response event is handled somewhere else
 		if (skip_save) {
-			let result = new Array(addName, addNumber)
+			let result = new Array(addName, addNumber);
 			return result;
 		}
 
@@ -257,7 +278,7 @@ class Smartphone {
 		let confirm = API.getUserInput("", 4);
 		if (confirm == "ja" || confirm == "Ja")
 		{
-			// close menu and send request to server
+			// close menu and send delete contact request to server
 			contactMenu.Visible = false;
 			API.triggerServerEvent("DELETE_CONTACT_REQUEST", name);
 		}
@@ -267,6 +288,7 @@ class Smartphone {
 	}
 
 	editContact(number) {
+		// get user input for name and number via, skip the response event from addContactToClient
 		let newContact = this.addContactToClient(true);
 
 		//  contact information could not be entered
